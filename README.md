@@ -1,32 +1,54 @@
 # mtcaptcha-solver
+
 <img width="794" height="229" alt="image" src="https://github.com/user-attachments/assets/508c1f1d-a9e1-46cd-9671-8899978c7822" />
 
-# deobfuscation process 
-I started by using the demo found on the [2captcha](https://2captcha.com/demo/mtcaptcha) website - when analysing the network requests this is what we see:
+# Deobfuscation Process
+
+I started by using the demo found on the 2captcha website. When analyzing the network requests, this is what we see:
 
 <img width="425" height="314" alt="image" src="https://github.com/user-attachments/assets/801b59fd-b9bb-4014-bc80-e2737fd1ed2a" />
 
-The first request (one highlighted in pink) is a GET request being made to mtcaptcha which fetches the actual captcha js and its also the code for the iframe itself, after that this js calls the "mtcv1/api/getchallenge.json" endpoint (highlighted in orange) and from that we get a challenege issued by the server for the js to solve, once the challenege is computed we use that to fetch the image (highlighted in yellow) by calling "/getimage.json" - once the image is read using a OCR model (in our case ive used deepinfra's api using the qwen model, this is just for simplicity feel free to use a local ocr or even train your own for cheaper and faster results) - and then we submit the answer, `fa`, `kt`, and `fs` (original fseed) to solvechallenge.json (highlighted in green) which gives you a `vt` (verification token) which can be checked using 2captchas verify endpoint.
+The first request (highlighted in pink) is a GET request made to MTCaptcha that fetches the actual CAPTCHA JavaScript, which also contains the iframe logic itself.
 
-As for the JS itself the obfuscation is rather minimal, most of it is string obfuscation, we see that `function _0x27c6()` is where all the strings are stored:
+After that, the script calls the `mtcv1/api/getchallenge.json` endpoint (highlighted in orange). This returns a challenge issued by the server that must be solved by the client-side JavaScript.
+
+Once the challenge has been computed, the result is used to fetch the CAPTCHA image (highlighted in yellow) by calling `/getimage.json`.
+
+The image is then processed using an OCR model. In this implementation, I've used DeepInfra's API with the Qwen model for simplicity. Feel free to use a local OCR solution or train your own model for a cheaper and faster alternative.
+
+Finally, we submit the answer along with `fa`, `kt`, and `fs` (the original fold seed) to `/solvechallenge.json` (highlighted in green). The response contains a `vt` (verification token), which can be validated using 2Captcha's verification endpoint.
+
+## JavaScript Deobfuscation
+
+The JavaScript obfuscation is relatively minimal and mostly consists of string obfuscation.
+
+The function `function _0x27c6()` contains the string table:
 
 <img width="556" height="445" alt="image" src="https://github.com/user-attachments/assets/a789d25d-c5b1-491c-a141-18045d87e4c4" />
 
-And there is a rotator which determines the correct index needed for each place this function is called:
+A rotator function is then used to determine the correct index for each string lookup:
 
 <img width="571" height="202" alt="image" src="https://github.com/user-attachments/assets/f01f52ec-43c2-499a-befc-43ba5fa2254b" />
 
-Once that is indentified bable was used to automatically replace all instances of this to the actual value from the string table - for example:
-```
+Once identified, Babel was used to automatically replace all instances of these lookups with their actual values from the string table.
+
+For example:
+
+```js
 Math[_0x5839(0x2e3)](
     Date[_0x5839(0x2a9)]()
 )
 ```
-turns into:
-```Math.floor(Date.now())```
 
-Once this was done with the others, we then found the initiale fold that is responsible for completeing the first challenege (the one we need to complete in order to get the iamge) - and we can see that here: 
+becomes:
+
+```js
+Math.floor(Date.now())
 ```
+
+After replacing the remaining lookups, we identified the fold algorithm responsible for completing the initial challenge (the one required before the image can be retrieved):
+
+```js
 FoldChlg: {
   URLSafeBase64CharCode2IntMap: [...],
   URLSafeBase64Int2CharMap: [...],
@@ -35,18 +57,26 @@ FoldChlg: {
   ...
 }
 ```
-What the fold is doing is this:
-1. Decode the seed into an array of integers (0‑63) using the URL‑safe base64 alphabet
+
+## Understanding the Fold Algorithm
+
+The fold algorithm works as follows:
+
+1. Decode the seed into an array of integers (`0-63`) using the URL-safe Base64 alphabet.
 2. Repeat `fslots` times:
-  1. Apply foldBase64IntArray 31 times.
-  2. Apply the same fold operation fdepth times on the result.
-  3. Hash the array using hashIntAry (a 32‑bit signed integer hash).
-  4. Take the hash modulo 4096 and encode it as two base64 characters (since 4096 = 64²).
-  5. Append those two chars to the output.
 
-Return the concatenated string – this is `fa` - and without this the server rejects the request to actually get the image. 
+   1. Apply `foldBase64IntArray` 31 times.
+   2. Apply the same fold operation `fdepth` additional times on the result.
+   3. Hash the array using `hashIntAry` (a signed 32-bit integer hash).
+   4. Take the hash modulo `4096` and encode it as two Base64 characters (`4096 = 64²`).
+   5. Append those two characters to the output.
+3. Return the concatenated string.
 
-after this we send it to `/solvechallenge.json` using the following parameters:
+The returned value is `fa`, and without it the server rejects the request used to retrieve the CAPTCHA image.
+
+## Solving the Challenge
+
+After obtaining the image and computing the fold answer, we submit the following parameters to `/solvechallenge.json`:
 
 | Parameter | Description                                                               |
 | --------- | ------------------------------------------------------------------------- |
@@ -62,5 +92,8 @@ after this we send it to `/solvechallenge.json` using the following parameters:
 | `tsh`     | Transaction signature: `TH[MD5("mtcap@mtcaptcha.com" + sitekey)]`.        |
 | `ss`      | Session identifier generated for each solve attempt.                      |
 
-Contact: https://t.me/yaziraof
+The response contains a verification token (`vt`) which can then be validated using the verification endpoint.
 
+## Contact
+
+https://t.me/yaziraof
