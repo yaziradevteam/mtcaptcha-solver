@@ -17,7 +17,7 @@ LANG = "en"
 WIDGET_SIZE = "standard"
 LF = 0
 
-DEEPINFRA_API_KEY = "r0PoXqyr8b0yKaYAemz121kKqhb7LocS"
+DEEPINFRA_API_KEY = "r0PoXqyr8b0yKaYAemz121kKqhb7LocS" #it dont work lulz
 DEEPINFRA_BASE_URL = "https://api.deepinfra.com/v1/openai"
 DEEPINFRA_MODEL = "Qwen/Qwen3-VL-235B-A22B-Instruct"
 
