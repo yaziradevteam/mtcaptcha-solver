@@ -47,16 +47,20 @@ What the fold is doing is this:
 Return the concatenated string – this is `fa` - and without this the server rejects the request to actually get the image. 
 
 after this we send it to `/solvechallenge.json` using the following parameters:
-ct - The challenge token you got from the first step.
-st - Your answer – the text you read from the CAPTCHA image.
-fa - The fold answer (a proof-of-work we compute from the seed).
-kt - Keystroke data – we generate a random string to simulate typing.
-fs - The original fold seed (passed back as-is).
-lf - Tells the server if this is a low‑friction challenge (we keep it 0).
-sk - Your site key.
-bd - The domain where the CAPTCHA is used.
-rt - Timestamp when the request is made (in milliseconds).
-tsh - A transaction signature: TH[MD5("mtcap@mtcaptcha.com" + sitekey)].
-ss - Session ID – we generate a new one for each attempt.
+
+| Parameter | Description                                                               |
+| --------- | ------------------------------------------------------------------------- |
+| `ct`      | The challenge token obtained from the initial challenge request.          |
+| `st`      | The CAPTCHA solution (text read from the CAPTCHA image).                  |
+| `fa`      | The fold answer (proof-of-work value computed from the fold seed).        |
+| `kt`      | Keystroke data used to simulate user typing behavior.                     |
+| `fs`      | The original fold seed returned by the challenge endpoint.                |
+| `lf`      | Indicates whether the challenge is low-friction (`0` = normal challenge). |
+| `sk`      | The site key associated with the CAPTCHA instance.                        |
+| `bd`      | The domain on which the CAPTCHA is being solved.                          |
+| `rt`      | Request timestamp in milliseconds since the Unix epoch.                   |
+| `tsh`     | Transaction signature: `TH[MD5("mtcap@mtcaptcha.com" + sitekey)]`.        |
+| `ss`      | Session identifier generated for each solve attempt.                      |
+
 
 
